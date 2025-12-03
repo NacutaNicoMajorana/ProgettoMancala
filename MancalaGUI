@@ -1,0 +1,37 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class MancalaGUI extends JFrame {
+    private JButton[] pits = new JButton[12];
+    private JLabel[] stores = new JLabel[2];
+
+    public MancalaGUI() {
+        setTitle("Mancala");
+        setSize(1100, 400);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+
+        JPanel boardPanel = new JPanel(new GridLayout(2, 6));
+        for (int i = 0; i < 12; i++) {
+            pits[i] = new JButton("4");
+            pits[i].setBackground(Color.LIGHT_GRAY);
+            boardPanel.add(pits[i]);
+        }
+
+        JPanel storePanel = new JPanel(new GridLayout(1, 2));
+        stores[0] = new JLabel("0", SwingConstants.CENTER);
+        stores[1] = new JLabel("0", SwingConstants.CENTER);
+        storePanel.add(stores[0]);
+        storePanel.add(stores[1]);
+
+        add(boardPanel, BorderLayout.CENTER);
+        add(storePanel, BorderLayout.SOUTH);
+
+        setVisible(true);
+    }
+
+    public static void main(String[] args) {
+        new MancalaGUI();
+    }
+}
