@@ -1,0 +1,122 @@
+import java.util.Arrays;
+
+class GameState {
+    private int[] board = new int[14];
+    private String turn = "P1";
+
+    public GameState() {
+        Arrays.fill(board, 4);
+        board[6] = 0; board[13] = 0;
+    }
+
+    public boolean isPlayerTurn(String pid) { return turn.equals(pid); }
+    public boolean isValidMove(String pid, int pit) { /* ... */ return true; }
+    public void applyMove(String pid, int pit) { /* ... */ }
+    public boolean isGameOver() { /* ... */ return false; }
+    public String getResult() { return "P1=" + board[6] + " P2=" + board[13]; }
+
+    @Override
+    public String toString() {
+        return Arrays.toString(board) + " Turno=" + turn;
+    }
+}
+
+
+import java.io.*;
+import java.net.*;
+import java.util.*;
+
+public class MancalaServer {
+    private final int port;
+    private final List<ClientHandler> clients = new ArrayList<>();
+    private final GameState state = new GameState();
+ 
+
+
+    public MancalaServer(int port) { this.port = port; }
+
+    public void start() throws IOException {
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
+            System.out.println("Server in ascolto su " + port);
+            while (true) {
+                Socket socket = serverSocket.accept();
+                ClientHandler handler = new ClientHandler(socket, this);
+                clients.add(handler);
+                new Thread(handler).start();
+            }
+        }
+    }
+
+    public synchronized void onMove(String playerId, int pitIndex) {
+        if (!state.isPlayerTurn(playerId)) {
+            sendTo(playerId, "ERROR:Non � il tuo turno");
+            return;
+        }
+        if (!state.isValidMove(playerId, pitIndex)) {
+            sendTo(playerId, "ERROR:Mossa non valida");
+            return;
+        }
+        state.applyMove(playerId, pitIndex);
+        broadcastState();
+        if (state.isGameOver()) broadcast("END:" + state.getResult());
+    }
+
+    private void broadcastState() {
+        broadcast("STATE:" + state.toString());
+    }
+
+    private void broadcast(String msg) {
+        for (ClientHandler c : clients) c.send(msg);
+    }
+
+    private void sendTo(String playerId, String msg) {
+        for (ClientHandler c : clients) {
+            if (playerId.equals(c.getPlayerId())) c.send(msg);
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        new MancalaServer(5000).start();
+    }
+}
+
+class ClientHandler implements Runnable {
+    private final Socket socket;
+    private final MancalaServer server;
+    private PrintWriter out;
+    private BufferedReader in;
+    private String playerId;
+
+    ClientHandler(Socket socket, MancalaServer server) {
+        this.socket = socket; this.server = server;
+    }
+
+    public String getPlayerId() { return playerId; }
+
+    public void send(String msg) {
+        out.println(msg);
+        out.flush();
+    }
+
+    @Override public void run() {
+        try {
+            out = new PrintWriter(socket.getOutputStream(), true);
+            in  = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            // primo messaggio: ID giocatore
+            playerId = in.readLine();
+            System.out.println("Registrato giocatore: " + playerId);
+
+            String line;
+            while ((line = in.readLine()) != null) {
+                if (line.startsWith("MOVE:")) {
+                    String[] parts = line.split(":");
+                    int pit = Integer.parseInt(parts[2]);
+                    server.onMove(parts[1], pit);
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Disconnessione: " + e.getMessage());
+        }
+    }
+}
