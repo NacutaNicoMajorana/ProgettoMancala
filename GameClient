@@ -120,3 +120,60 @@ class ClientHandler implements Runnable {
         }
     }
 }
+
+import java.io.*;
+import java.net.*;
+import java.util.*;
+
+public class MancalaClient {
+    private final String host;
+    private final int port;
+    private final String playerId;
+
+    public MancalaClient(String host, int port, String playerId) {
+        this.host = host; this.port = port; this.playerId = playerId;
+    }
+
+    public void start() throws IOException {
+        try (Socket socket = new Socket(host, port);
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+             Scanner console = new Scanner(System.in)) {
+
+            // invia ID giocatore
+            out.println(playerId);
+
+            // thread lettura
+            Thread reader = new Thread(() -> {
+                String line;
+                try {
+                    while ((line = in.readLine()) != null) {
+                        if (line.startsWith("STATE:")) {
+                            System.out.println("Aggiornamento: " + line.substring(6));
+                        } else if (line.startsWith("ERROR:")) {
+                            System.out.println("Errore: " + line.substring(6));
+                        } else if (line.startsWith("END:")) {
+                            System.out.println("Partita finita: " + line.substring(4));
+                        }
+                    }
+                } catch (IOException e) {
+                    System.err.println("Connessione chiusa");
+                }
+            });
+            reader.start();
+
+            // loop input mosse
+            while (true) {
+                System.out.print("Scegli buca (indice): ");
+                String s = console.nextLine();
+                if (s == null ) break;
+                int pit = Integer.parseInt(s.trim());
+                out.println("MOVE:" + playerId + ":" + pit);
+            }
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        new MancalaClient("127.0.0.1", 5000, args.length>0?args[0]:"P1").start();
+    }
+}
