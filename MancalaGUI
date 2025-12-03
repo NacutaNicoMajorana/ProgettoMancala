@@ -1,6 +1,5 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
 
 public class MancalaGUI extends JFrame {
     private JButton[] pits = new JButton[12];
@@ -19,14 +18,17 @@ public class MancalaGUI extends JFrame {
             boardPanel.add(pits[i]);
         }
 
-        JPanel storePanel = new JPanel(new GridLayout(1, 2));
         stores[0] = new JLabel("0", SwingConstants.CENTER);
-        stores[1] = new JLabel("0", SwingConstants.CENTER);
-        storePanel.add(stores[0]);
-        storePanel.add(stores[1]);
+        stores[0].setPreferredSize(new Dimension(80, 200));
+        stores[0].setBorder(BorderFactory.createLineBorder(Color.BLACK));
 
+        stores[1] = new JLabel("0", SwingConstants.CENTER);
+        stores[1].setPreferredSize(new Dimension(80, 200));
+        stores[1].setBorder(BorderFactory.createLineBorder(Color.BLACK));
+
+        add(stores[0], BorderLayout.WEST);
         add(boardPanel, BorderLayout.CENTER);
-        add(storePanel, BorderLayout.SOUTH);
+        add(stores[1], BorderLayout.EAST);
 
         setVisible(true);
     }
