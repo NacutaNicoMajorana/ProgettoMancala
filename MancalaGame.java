@@ -18,7 +18,7 @@ public class MancalaGame {
     }
 
     public boolean faiMossa(int bucaInput) {
-        // bucaInput è quello che scrive il giocatore (1..14)
+        // bucaInput Ã¨ quello che scrive il giocatore (1..14)
         int buca = bucaInput - 1; // converto in indice array (0..13)
 
         if (partitaFinita) return false;
@@ -33,36 +33,41 @@ public class MancalaGame {
             // Evita di mettere pietre nello store avversario
             if (giocatoreCorrente == 1 && indice == 13) continue;
             if (giocatoreCorrente == 2 && indice == 6) continue;
+
+            int precedente = campo[indice];
             campo[indice]++;
             pietre--;
-        }
 
-        // cattura
-        if (giocatoreCorrente == 1 && indice >= 0 && indice <= 5 && campo[indice] == 1) {
-            int opposta = 12 - indice;
-            campo[6] += campo[opposta] + 1;
-            campo[indice] = 0;
-            campo[opposta] = 0;
-        }
-        if (giocatoreCorrente == 2 && indice >= 7 && indice <= 12 && campo[indice] == 1) {
-            int opposta = 12 - indice;
-            campo[13] += campo[opposta] + 1;
-            campo[indice] = 0;
-            campo[opposta] = 0;
+            // cattura valida: la buca era vuota prima e ora ha 1 pietra
+            if (pietre == 0) { // solo sull'ultima pietra
+                if (giocatoreCorrente == 1 && indice >= 0 && indice <= 5 && campo[indice] == 1 && precedente == 0) {
+                    int opposta = 12 - indice;
+                    campo[6] += campo[opposta] + 1;
+                    campo[indice] = 0;
+                    campo[opposta] = 0;
+                }
+                if (giocatoreCorrente == 2 && indice >= 7 && indice <= 12 && campo[indice] == 1 && precedente == 0) {
+                    int opposta = 12 - indice;
+                    campo[13] += campo[opposta] + 1;
+                    campo[indice] = 0;
+                    campo[opposta] = 0;
+                }
+            }
         }
 
         // seconda mossa se finisci nel tuo store
         if ((giocatoreCorrente == 1 && indice == 6) || (giocatoreCorrente == 2 && indice == 13)) {
+            controllaFinePartita(); // verifica comunque
             return true;
         }
 
-        // cambio turno
-        giocatoreCorrente = (giocatoreCorrente == 1) ? 2 : 1;
-
+        // controllo fine partita prima di cambiare turno
         controllaFinePartita();
+        if (!partitaFinita) {
+            giocatoreCorrente = (giocatoreCorrente == 1) ? 2 : 1;
+        }
         return true;
     }
-
 
     private boolean mossaValida(int buca) {
         if (giocatoreCorrente == 1 && buca >= 0 && buca <= 5) return campo[buca] > 0;
