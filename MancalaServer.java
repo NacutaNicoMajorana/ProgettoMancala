@@ -9,9 +9,9 @@ public class MancalaServer {
 
         int port = 5555;
         ServerSocket serverSocket = new ServerSocket(port);
-        System.out.println("SERVER AVVIATO sulla porta " + port);
+        System.out.println("server avviato sulla porta " + port);
 
-        while (true) {   // 🔥 SERVER SEMPRE ATTIVO
+        while (true) {   
 
             System.out.println("In attesa di due giocatori...");
 
@@ -65,6 +65,7 @@ public class MancalaServer {
                 out1.println(campo);
                 out2.println(campo);
             }
+            
 
             // --- FINE PARTITA ---
             String vincitore = "Vincitore: " + gioco.getVincitore();
@@ -73,7 +74,7 @@ public class MancalaServer {
 
             System.out.println("Partita terminata. In attesa di nuovi giocatori...");
 
-            // Chiudo SOLO i client, NON il server
+            
             player1.close();
             player2.close();
         }
