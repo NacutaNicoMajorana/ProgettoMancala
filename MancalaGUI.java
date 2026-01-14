@@ -44,11 +44,11 @@ public class MancalaGUI extends JFrame {
         JPanel boardPanel = new JPanel(new GridLayout(2, 6, 10, 10));
         boardPanel.setBackground(null);
 
-        store2 = new StorePanel(13);
+        store2 = new StorePanel(6);
         store2.setOpaque(false);
         add(store2, BorderLayout.EAST);
 
-        store1 = new StorePanel(6);
+        store1 = new StorePanel(13);
         store1.setOpaque(false);
         add(store1, BorderLayout.WEST);
 
