@@ -1,3 +1,4 @@
+package Mancala;
 import java.util.Arrays;
 
 public class MancalaGame {
@@ -120,4 +121,9 @@ public class MancalaGame {
         if (campo[13] > campo[6]) return "Giocatore 2";
         return "Pareggio";
     }
+
+    public void setCampo(int[] nuovoCampo) {
+        this.campo = Arrays.copyOf(nuovoCampo, nuovoCampo.length);
+    }
+
 }
