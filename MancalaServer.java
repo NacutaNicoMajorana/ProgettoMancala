@@ -4,63 +4,78 @@ import java.net.*;
 import java.util.Arrays;
 
 public class MancalaServer {
+
     public static void main(String[] args) throws IOException {
 
         int port = 5555;
         ServerSocket serverSocket = new ServerSocket(port);
-        System.out.println("Server avviato sulla porta " + port);
+        System.out.println("SERVER AVVIATO sulla porta " + port);
 
-        // Connessione Giocatore 1
-        Socket player1 = serverSocket.accept();
-        PrintWriter output1 = new PrintWriter(player1.getOutputStream(), true);
-        BufferedReader input1 = new BufferedReader(new InputStreamReader(player1.getInputStream()));
-        output1.println("GIOCATORE 1");
-        System.out.println("Giocatore 1 connesso");
+        while (true) {   // 🔥 SERVER SEMPRE ATTIVO
 
-        // Connessione Giocatore 2
-        Socket player2 = serverSocket.accept();
-        PrintWriter output2 = new PrintWriter(player2.getOutputStream(), true);
-        BufferedReader input2 = new BufferedReader(new InputStreamReader(player2.getInputStream()));
-        output2.println("GIOCATORE 2");
-        System.out.println("Giocatore 2 connesso");
+            System.out.println("In attesa di due giocatori...");
 
-        MancalaGame gioco = new MancalaGame();
+            // --- CONNESSIONE GIOCATORE 1 ---
+            Socket player1 = serverSocket.accept();
+            PrintWriter out1 = new PrintWriter(player1.getOutputStream(), true);
+            BufferedReader in1 = new BufferedReader(new InputStreamReader(player1.getInputStream()));
+            out1.println("PLAYER 1");
+            System.out.println("Giocatore 1 connesso");
 
-        while (!gioco.isPartitaFinita()) {
+            // --- CONNESSIONE GIOCATORE 2 ---
+            Socket player2 = serverSocket.accept();
+            PrintWriter out2 = new PrintWriter(player2.getOutputStream(), true);
+            BufferedReader in2 = new BufferedReader(new InputStreamReader(player2.getInputStream()));
+            out2.println("PLAYER 2");
+            System.out.println("Giocatore 2 connesso");
 
-            int turno = gioco.getGiocatoreCorrente();
-            PrintWriter outCorr = turno == 1 ? output1 : output2;
-            BufferedReader inCorr = turno == 1 ? input1 : input2;
-            PrintWriter outAltro = turno == 1 ? output2 : output1;
+            // --- NUOVA PARTITA ---
+            System.out.println("Partita iniziata!");
+            MancalaGame gioco = new MancalaGame();
 
-            // Messaggi turno
-            outCorr.println("Tocca a te, Giocatore " + turno);
-            outCorr.println("MOVE");
-            outAltro.println("In attesa del Giocatore " + turno);
+            // --- LOOP PARTITA ---
+            while (!gioco.isPartitaFinita()) {
 
-            // Lettura mossa
-            String linea = inCorr.readLine();
-            if (linea == null) break;
+                int turno = gioco.getGiocatoreCorrente();
 
-            try {
-                int mossa = Integer.parseInt(linea.trim());
-                if (!gioco.faiMossa(mossa)) {
-                    outCorr.println("Mossa non valida");
+                PrintWriter outCorr = turno == 1 ? out1 : out2;
+                BufferedReader inCorr = turno == 1 ? in1 : in2;
+                PrintWriter outAltro = turno == 1 ? out2 : out1;
+
+                // Messaggi turno
+                outCorr.println("Tocca a te, Giocatore " + turno);
+                outCorr.println("MOVE");
+                outAltro.println("In attesa del Giocatore " + turno);
+
+                // Lettura mossa
+                String linea = inCorr.readLine();
+                if (linea == null) break;
+
+                try {
+                    int mossa = Integer.parseInt(linea.trim());
+                    if (!gioco.faiMossa(mossa)) {
+                        outCorr.println("Mossa non valida");
+                    }
+                } catch (Exception e) {
+                    outCorr.println("Input non valido");
                 }
-            } catch (Exception e) {
-                outCorr.println("Input non valido");
+
+                // Aggiornamento campo
+                String campo = Arrays.toString(gioco.getCampo());
+                out1.println(campo);
+                out2.println(campo);
             }
 
-            // Aggiornamento campo
-            String campo = Arrays.toString(gioco.getCampo());
-            output1.println(campo);
-            output2.println(campo);
+            // --- FINE PARTITA ---
+            String vincitore = "Vincitore: " + gioco.getVincitore();
+            out1.println(vincitore);
+            out2.println(vincitore);
+
+            System.out.println("Partita terminata. In attesa di nuovi giocatori...");
+
+            // Chiudo SOLO i client, NON il server
+            player1.close();
+            player2.close();
         }
-
-        // Fine partita
-        output1.println("Vincitore: " + gioco.getVincitore());
-        output2.println("Vincitore: " + gioco.getVincitore());
-
-        serverSocket.close();
     }
 }
