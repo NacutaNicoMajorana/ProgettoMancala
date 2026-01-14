@@ -158,7 +158,7 @@ public class MancalaGUI extends JFrame {
             int w = getWidth();
             int h = getHeight();
 
-            // Sfondo buca (effetto legno chiaro)
+            // Sfondo buca
             g2.setColor(new Color(230, 180, 120));
             g2.fillRoundRect(5, 5, w - 10, h - 10, 40, 40);
 
