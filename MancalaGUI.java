@@ -3,6 +3,8 @@ package Mancala;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.*;
+import java.net.Socket;
 
 public class MancalaGUI extends JFrame {
 
@@ -11,7 +13,23 @@ public class MancalaGUI extends JFrame {
     private StorePanel store1, store2;
     private JLabel turnoLabel;
 
+    // 🔥 Aggiunte per il networking
+    private Socket socket;
+    private BufferedReader input;
+    private PrintWriter output;
+
     public MancalaGUI() {
+
+        // 🔥 Connessione al server
+        try {
+            socket = new Socket("localhost", 5555);
+            input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            output = new PrintWriter(socket.getOutputStream(), true);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Errore connessione server");
+            e.printStackTrace();
+        }
+
         gioco = new MancalaGame();
         buchePanels = new PitPanel[14];
 
@@ -26,29 +44,25 @@ public class MancalaGUI extends JFrame {
         JPanel boardPanel = new JPanel(new GridLayout(2, 6, 10, 10));
         boardPanel.setBackground(orangeTheme);
 
-        // Store Giocatore 2
         store2 = new StorePanel(13);
         store2.setBackground(orangeTheme);
         add(store2, BorderLayout.EAST);
 
-        // Store Giocatore 1
         store1 = new StorePanel(6);
         store1.setBackground(orangeTheme);
         add(store1, BorderLayout.WEST);
 
-        // Buche Giocatore 2 (12..7)
         for (int i = 12; i >= 7; i--) {
             buchePanels[i] = new PitPanel(i);
             boardPanel.add(buchePanels[i]);
         }
 
-        // Buche Giocatore 1 (0..5)
         for (int i = 0; i <= 5; i++) {
             buchePanels[i] = new PitPanel(i);
             boardPanel.add(buchePanels[i]);
         }
 
-        turnoLabel = new JLabel("Turno: Giocatore " + gioco.getGiocatoreCorrente(), SwingConstants.CENTER);
+        turnoLabel = new JLabel("In attesa del server...", SwingConstants.CENTER);
         turnoLabel.setFont(new Font("Arial", Font.BOLD, 20));
         turnoLabel.setOpaque(true);
         turnoLabel.setBackground(orangeTheme);
@@ -57,6 +71,33 @@ public class MancalaGUI extends JFrame {
         add(boardPanel, BorderLayout.CENTER);
 
         aggiornaTabellone();
+
+        // 🔥 Thread che ascolta il server
+        new Thread(() -> {
+            try {
+                String line;
+                while ((line = input.readLine()) != null) {
+
+                    if (line.equals("MOVE")) {
+                        turnoLabel.setText("Tocca a te!");
+                        continue;
+                    }
+
+                    if (line.startsWith("[")) {
+                        int[] campo = parseCampo(line);
+                        gioco.setCampo(campo);
+
+                        SwingUtilities.invokeLater(() -> aggiornaTabellone());
+                    }
+
+                    if (line.startsWith("Vincitore")) {
+                        turnoLabel.setText(line);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     // ---------------------------------------------------------
@@ -73,11 +114,8 @@ public class MancalaGUI extends JFrame {
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    if (!gioco.isPartitaFinita()) {
-                        if (gioco.faiMossa(index + 1)) {
-                            aggiornaTabellone();
-                        }
-                    }
+                    // 🔥 Invia la mossa al server
+                    output.println(index + 1);
                 }
             });
         }
@@ -89,16 +127,13 @@ public class MancalaGUI extends JFrame {
             int w = getWidth();
             int h = getHeight();
 
-            // Numero della buca sopra il cerchio
             g.setColor(Color.BLACK);
             g.setFont(new Font("Arial", Font.BOLD, 14));
             g.drawString("Buca " + (index + 1), w / 2 - 25, 15);
 
-            // Cerchio della buca
             g.setColor(Color.ORANGE.darker());
             g.fillOval(10, 25, w - 20, h - 35);
 
-            // Pietre ordinate in griglia
             int pietre = gioco.getCampo()[index];
             drawStones(g, pietre, 10, 25, w - 20, h - 35);
         }
@@ -166,12 +201,17 @@ public class MancalaGUI extends JFrame {
         }
         store1.repaint();
         store2.repaint();
+    }
 
-        if (gioco.isPartitaFinita()) {
-            turnoLabel.setText("Partita finita! Vincitore: " + gioco.getVincitore());
-        } else {
-            turnoLabel.setText("Turno: Giocatore " + gioco.getGiocatoreCorrente());
+    // 🔥 Parser campo ricevuto dal server
+    private int[] parseCampo(String s) {
+        s = s.replace("[", "").replace("]", "");
+        String[] parts = s.split(",");
+        int[] campo = new int[14];
+        for (int i = 0; i < 14; i++) {
+            campo[i] = Integer.parseInt(parts[i].trim());
         }
+        return campo;
     }
 
     public static void main(String[] args) {
