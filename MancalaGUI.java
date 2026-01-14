@@ -13,14 +13,15 @@ public class MancalaGUI extends JFrame {
     private StorePanel store1, store2;
     private JLabel turnoLabel;
 
-    // Aggiunte per il networking
     private Socket socket;
     private BufferedReader input;
     private PrintWriter output;
 
+    private int myPlayerNumber = 0;
+    private boolean mioTurno = false;
+
     public MancalaGUI() {
 
-        //  Connessione al server
         try {
             socket = new Socket("localhost", 5555);
             input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -62,7 +63,7 @@ public class MancalaGUI extends JFrame {
             boardPanel.add(buchePanels[i]);
         }
 
-        turnoLabel = new JLabel("In attesa del server...", SwingConstants.CENTER);
+        turnoLabel = new JLabel("Connessione in corso...", SwingConstants.CENTER);
         turnoLabel.setFont(new Font("Arial", Font.BOLD, 20));
         turnoLabel.setOpaque(true);
         turnoLabel.setBackground(orangeTheme);
@@ -72,26 +73,51 @@ public class MancalaGUI extends JFrame {
 
         aggiornaTabellone();
 
-        //  Thread che ascolta il server
         new Thread(() -> {
             try {
                 String line;
                 while ((line = input.readLine()) != null) {
 
-                    if (line.equals("MOVE")) {
-                        turnoLabel.setText("Tocca a te!");
+                    // Identificazione giocatore
+                    if (line.startsWith("PLAYER")) {
+                        myPlayerNumber = Integer.parseInt(line.split(" ")[1]);
+                        turnoLabel.setText("Sei il Giocatore " + myPlayerNumber);
                         continue;
                     }
 
+                    // Turno
+                    if (line.startsWith("Tocca a te")) {
+                        int turno = Integer.parseInt(line.replaceAll("\\D+", ""));
+                        if (turno == myPlayerNumber) {
+                            mioTurno = true;
+                            turnoLabel.setText("Tocca a te!");
+                        } else {
+                            mioTurno = false;
+                            turnoLabel.setText("In attesa del Giocatore " + turno);
+                        }
+                        continue;
+                    }
+
+                    // Messaggi di attesa espliciti
+                    if (line.startsWith("In attesa")) {
+                        turnoLabel.setText(line);
+                        mioTurno = false;
+                        continue;
+                    }
+
+                    // Campo aggiornato
                     if (line.startsWith("[")) {
                         int[] campo = parseCampo(line);
                         gioco.setCampo(campo);
-
-                        SwingUtilities.invokeLater(() -> aggiornaTabellone());
+                        SwingUtilities.invokeLater(this::aggiornaTabellone);
+                        continue;
                     }
 
+                    // Fine partita
                     if (line.startsWith("Vincitore")) {
                         turnoLabel.setText(line);
+                        mioTurno = false;
+                        continue;
                     }
                 }
             } catch (Exception e) {
@@ -100,9 +126,6 @@ public class MancalaGUI extends JFrame {
         }).start();
     }
 
-    // ---------------------------------------------------------
-    // PANNELLO BUCA
-    // ---------------------------------------------------------
     private class PitPanel extends JPanel {
         private int index;
 
@@ -114,8 +137,10 @@ public class MancalaGUI extends JFrame {
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    // 🔥 Invia la mossa al server
-                    output.println(index + 1);
+                    // invia la mossa SOLO se è il mio turno
+                    if (mioTurno && myPlayerNumber != 0) {
+                        output.println(index + 1);
+                    }
                 }
             });
         }
@@ -139,9 +164,6 @@ public class MancalaGUI extends JFrame {
         }
     }
 
-    // ---------------------------------------------------------
-    // PANNELLO STORE
-    // ---------------------------------------------------------
     private class StorePanel extends JPanel {
         private int index;
 
@@ -169,9 +191,6 @@ public class MancalaGUI extends JFrame {
         }
     }
 
-    // ---------------------------------------------------------
-    // DISEGNO PIETRE ORDINATE
-    // ---------------------------------------------------------
     private void drawStones(Graphics g, int count, int x, int y, int width, int height) {
         int cols = 5;
         int spacing = 18;
@@ -194,7 +213,6 @@ public class MancalaGUI extends JFrame {
         }
     }
 
-    // ---------------------------------------------------------
     private void aggiornaTabellone() {
         for (int i = 0; i < 14; i++) {
             if (i != 6 && i != 13) buchePanels[i].repaint();
@@ -203,7 +221,6 @@ public class MancalaGUI extends JFrame {
         store2.repaint();
     }
 
-    //  Parser campo ricevuto dal server
     private int[] parseCampo(String s) {
         s = s.replace("[", "").replace("]", "");
         String[] parts = s.split(",");
