@@ -13,14 +13,14 @@ public class MancalaGUI extends JFrame {
     private StorePanel store1, store2;
     private JLabel turnoLabel;
 
-    // 🔥 Aggiunte per il networking
+    // Aggiunte per il networking
     private Socket socket;
     private BufferedReader input;
     private PrintWriter output;
 
     public MancalaGUI() {
 
-        // 🔥 Connessione al server
+        //  Connessione al server
         try {
             socket = new Socket("localhost", 5555);
             input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -72,7 +72,7 @@ public class MancalaGUI extends JFrame {
 
         aggiornaTabellone();
 
-        // 🔥 Thread che ascolta il server
+        //  Thread che ascolta il server
         new Thread(() -> {
             try {
                 String line;
@@ -203,7 +203,7 @@ public class MancalaGUI extends JFrame {
         store2.repaint();
     }
 
-    // 🔥 Parser campo ricevuto dal server
+    //  Parser campo ricevuto dal server
     private int[] parseCampo(String s) {
         s = s.replace("[", "").replace("]", "");
         String[] parts = s.split(",");
