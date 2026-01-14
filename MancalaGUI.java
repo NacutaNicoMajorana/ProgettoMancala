@@ -73,6 +73,7 @@ public class MancalaGUI extends JFrame {
 
         aggiornaTabellone();
 
+        // Thread di ascolto dal server
         new Thread(() -> {
             try {
                 String line;
@@ -98,7 +99,7 @@ public class MancalaGUI extends JFrame {
                         continue;
                     }
 
-                    // Messaggi di attesa espliciti
+                    // Messaggi di attesa
                     if (line.startsWith("In attesa")) {
                         turnoLabel.setText(line);
                         mioTurno = false;
@@ -126,6 +127,9 @@ public class MancalaGUI extends JFrame {
         }).start();
     }
 
+    // ---------------------------------------------------------
+    // PANNELLO BUCA
+    // ---------------------------------------------------------
     private class PitPanel extends JPanel {
         private int index;
 
@@ -137,7 +141,6 @@ public class MancalaGUI extends JFrame {
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    // invia la mossa SOLO se è il mio turno
                     if (mioTurno && myPlayerNumber != 0) {
                         output.println(index + 1);
                     }
@@ -149,61 +152,108 @@ public class MancalaGUI extends JFrame {
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
 
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
             int w = getWidth();
             int h = getHeight();
 
-            g.setColor(Color.BLACK);
-            g.setFont(new Font("Arial", Font.BOLD, 14));
-            g.drawString("Buca " + (index + 1), w / 2 - 25, 15);
+            // Sfondo buca (effetto legno chiaro)
+            g2.setColor(new Color(230, 180, 120));
+            g2.fillRoundRect(5, 5, w - 10, h - 10, 40, 40);
 
-            g.setColor(Color.ORANGE.darker());
-            g.fillOval(10, 25, w - 20, h - 35);
+            // Bordo buca
+            g2.setColor(new Color(150, 100, 60));
+            g2.setStroke(new BasicStroke(3));
+            g2.drawRoundRect(5, 5, w - 10, h - 10, 40, 40);
 
+            // Testo
+            g2.setColor(Color.BLACK);
+            g2.setFont(new Font("Arial", Font.BOLD, 14));
+            FontMetrics fm = g2.getFontMetrics();
+            String label = "Buca " + (index + 1);
+            int textWidth = fm.stringWidth(label);
+            g2.drawString(label, (w - textWidth) / 2, 22);
+
+            // Pietre
             int pietre = gioco.getCampo()[index];
-            drawStones(g, pietre, 10, 25, w - 20, h - 35);
+            drawStones(g2, pietre, 18, 30, w - 36, h - 50);
         }
     }
 
+    // ---------------------------------------------------------
+    // PANNELLO STORE
+    // ---------------------------------------------------------
     private class StorePanel extends JPanel {
         private int index;
 
         public StorePanel(int index) {
             this.index = index;
             setPreferredSize(new Dimension(120, 300));
+            setBackground(new Color(255, 200, 120));
         }
 
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
 
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
             int w = getWidth();
             int h = getHeight();
 
-            g.setColor(Color.ORANGE.darker());
-            g.fillRect(20, 20, w - 40, h - 40);
+            // Sfondo granaio
+            g2.setColor(new Color(230, 180, 120));
+            g2.fillRoundRect(10, 10, w - 20, h - 20, 40, 40);
 
-            g.setColor(Color.BLACK);
-            g.setFont(new Font("Arial", Font.BOLD, 16));
-            g.drawString("Store " + (index == 6 ? "1" : "2"), w / 2 - 30, 15);
+            // Bordo granaio
+            g2.setColor(new Color(150, 100, 60));
+            g2.setStroke(new BasicStroke(3));
+            g2.drawRoundRect(10, 10, w - 20, h - 20, 40, 40);
 
+            // Testo
+            g2.setColor(Color.BLACK);
+            g2.setFont(new Font("Arial", Font.BOLD, 16));
+            String label = "Store " + (index == 6 ? "1" : "2");
+            FontMetrics fm = g2.getFontMetrics();
+            int textWidth = fm.stringWidth(label);
+            g2.drawString(label, (w - textWidth) / 2, 28);
+
+            // Pietre
             int pietre = gioco.getCampo()[index];
-            drawStones(g, pietre, 20, 20, w - 40, h - 40);
+            drawStones(g2, pietre, 22, 40, w - 44, h - 70);
         }
     }
 
-    private void drawStones(Graphics g, int count, int x, int y, int width, int height) {
-        int cols = 5;
-        int spacing = 18;
+    // ---------------------------------------------------------
+    // DISEGNO PIETRE ORDINATE
+    // ---------------------------------------------------------
+    private void drawStones(Graphics2D g2, int count, int x, int y, int width, int height) {
+        int cols = 4;
+        int spacing = 22;
+        int size = 14;
 
-        int row = 0;
         int col = 0;
+        int row = 0;
 
         for (int i = 0; i < count; i++) {
-            int px = x + 10 + col * spacing;
-            int py = y + 10 + row * spacing;
+            int px = x + col * spacing;
+            int py = y + row * spacing;
 
-            g.setColor(new Color(80, 80, 80));
-            g.fillOval(px, py, 12, 12);
+            if (px + size > x + width) {
+                col = 0;
+                row++;
+                px = x;
+                py = y + row * spacing;
+            }
+
+            // Pietra con bordo
+            g2.setColor(new Color(90, 90, 90));
+            g2.fillOval(px, py, size, size);
+
+            g2.setColor(Color.BLACK);
+            g2.drawOval(px, py, size, size);
 
             col++;
             if (col >= cols) {
@@ -213,6 +263,7 @@ public class MancalaGUI extends JFrame {
         }
     }
 
+    // ---------------------------------------------------------
     private void aggiornaTabellone() {
         for (int i = 0; i < 14; i++) {
             if (i != 6 && i != 13) buchePanels[i].repaint();
